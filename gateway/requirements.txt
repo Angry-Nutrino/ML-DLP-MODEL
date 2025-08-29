@@ -1,0 +1,2 @@
+aiosmtpd==1.4.4.post2
+requests==2.32.3

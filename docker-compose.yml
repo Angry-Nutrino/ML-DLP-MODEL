@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  api:
+    build: ./api
+    environment:
+      API_KEY: ${API_KEY:-DEMO_KEY}
+      # Container path where model is mounted
+      MODEL_PATH: /models/${MODEL_FOLDER_NAME:-dlp_model_distilbert-base}
+    volumes:
+      - ./model:/models:ro
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  smtp:
+    build: ./gateway
+    environment:
+      API_URL: http://api:8000
+      API_KEY: ${API_KEY:-DEMO_KEY}
+      RELAY_HOST: mailhog
+      RELAY_PORT: "1025"
+    depends_on:
+      api:
+        condition: service_healthy
+      mailhog:
+        condition: service_started
+    ports:
+      - "2525:2525"
+
+  ui:
+    build: ./ui
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
